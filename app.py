@@ -109,8 +109,8 @@ with st.echo():
 
 st.write("Adjust depth of tree")
 # plot tree
-plt.figure(figsize = (20, 10), dpi = 300)
-tree.plot_tree(model, fontsize = 10, feature_names = X.columns, impurity = True,
+plt.figure(figsize = (20, 12), dpi = 150)
+tree.plot_tree(model, fontsize = 15, feature_names = X.columns, impurity = True,
                class_names = ["True", "False"], label = 'root', filled = True)
 plt.show()
 st.pyplot()
