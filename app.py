@@ -64,18 +64,23 @@ def display_attribute(df, meta, col_name):
       pep_col_name.append(len(pep.loc[pep[col_name] == label]))
 
   else:
-    rg = max(df[col_name]) - min(df[col_name])
-    print(rg)
+    labels = []
+    min_val = int(min(df[col_name]))
+    max_val = int(max(df[col_name]))
+    rg = max_val - min_val
     if rg < 12:
-      labels = []
-      min_val = int(min(df[col_name]))
-      max_val = int(max(df[col_name]))
       for x in range(min_val, max_val + 1):
         no_pep_col_name.append(len(df.loc[df[col_name] == x]))
         pep_col_name.append(len(pep.loc[pep[col_name] == x]))
         labels.append(x)
     else:
-      pass
+      for y in range(min_val, max_val, (rg//8)):
+        no_pep_col_name.append(len(df.loc[df[col_name].between(y, y + (rg//8))]))
+        pep_col_name.append(len(pep.loc[pep[col_name].between(y, y + (rg//8))]))
+        labels.append(f"{y}-{y+(rg//8-1)}")
+
+  if type(labels[0]) != str:
+    labels = [str(label) for label in labels]
   plt.figure(dpi = 300)
   plt.bar(labels, no_pep_col_name, label = 'No PEP')
   plt.bar(labels, pep_col_name, label = 'Yes PEP')
@@ -94,7 +99,7 @@ def get_labels(col_name):
     return [False, True]
   return label
 
-option = st.selectbox("column", training_df.columns, index = 1)
+option = st.selectbox("column", training_df.columns, index = 0)
 display_attribute(training_df, meta, option)
 
 # create model
