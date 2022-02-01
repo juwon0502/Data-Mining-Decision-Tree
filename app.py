@@ -8,11 +8,11 @@ with st.echo():
   # import all libraries
   import pandas as pd
   import numpy as np
-  from scipy.io import arff
+  import arff
   from matplotlib import pyplot as plt
   from sklearn import tree
-  from sklearn.tree import plot_tree, export_text
-  from sklearn.metrics import plot_confusion_matrix, plot_roc_curve, accuracy_score
+  from sklearn.tree import plot_tree, export_text 
+  from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, RocCurveDisplay, accuracy_score
 
 # remove warnings on webstie
 st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -20,11 +20,12 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 st.write("Import data")
 with st.echo():
   # load data as pandas Dataframe
-  training_arff = arff.loadarff('./datasets/bank-training.arff')
-  testing_arff = arff.loadarff('./datasets/bank-NewCustomers.arff')
-  training_df = pd.DataFrame(training_arff[0])
-  testing_df = pd.DataFrame(testing_arff[0])
-  meta = training_arff[1]
+  training_arff = arff.load(open('./datasets/bank-training.arff'))
+  testing_arff = arff.load(open('./datasets/bank-NewCustomers.arff'))
+  col_val = [attribute[0] for attribute in training_arff['attributes']]
+  training_df = pd.DataFrame(training_arff['data'], columns = col_val)
+  testing_df = pd.DataFrame(testing_arff['data'], columns = col_val)
+  meta = training_arff['attributes']
 
 # cache data so computing time is saved
 @st.cache(suppress_st_warning = True)
@@ -41,7 +42,6 @@ def clean_df(df):
       df = df.replace({col: {'YES': True, 'NO': False}})
     except:
       pass
-  # return pd.get_dummies(df)
   return df
 
 training_df = clean_df(training_df)
@@ -54,11 +54,12 @@ st.write("Training Data:", training_df_dummy.head(10))
 st.write("## Visualize Attributes")
 # display attributes
 def display_attribute(df, meta, col_name):
+  col_val = [item[0] for item in meta]
   pep = df.loc[df['pep'] == True]
   pep_col_name = []
   no_pep_col_name = []
-  if meta.types()[meta.names().index(col_name)] == 'nominal':
-    labels = get_labels(col_name)
+  if type(meta[col_val.index(col_name)][1]) == list:
+    labels = meta[col_val.index(col_name)][1]
     for label in labels:
       no_pep_col_name.append(len(df.loc[df[col_name] == label]))
       pep_col_name.append(len(pep.loc[pep[col_name] == label]))
@@ -81,7 +82,7 @@ def display_attribute(df, meta, col_name):
 
   if type(labels[0]) != str:
     labels = [str(label) for label in labels]
-  plt.figure(dpi = 300)
+  plt.figure(dpi = 100)
   plt.bar(labels, no_pep_col_name, label = 'No PEP')
   plt.bar(labels, pep_col_name, label = 'Yes PEP')
   plt.legend()
@@ -89,15 +90,6 @@ def display_attribute(df, meta, col_name):
   plt.show()
   st.pyplot()
   
-def get_labels(col_name):
-  label = []
-  x = meta.names().index(col_name) + 1
-  values = (str(meta).split('\n')[x].split("range is ")[1].lstrip('(').rstrip(')').split(','))
-  for value in values:
-    label.append(value.strip().strip("''"))
-  if label == ['NO', 'YES']:
-    return [False, True]
-  return label
 
 option = st.selectbox("column", training_df.columns, index = 0)
 display_attribute(training_df, meta, option)
@@ -130,12 +122,21 @@ y_test = testing_df_dummy.pep
 X_test = testing_df_dummy.drop(columns=['pep'])
 # y_pred = model.predict(X_test)
 
+with st.echo():
+  y_test = testing_df_dummy.pep
+  X_test = testing_df_dummy.drop(columns=['pep'])
+  predictions = model.predict(X_test)
+
 if st.checkbox('Confusion Matrix'):
   st.subheader("Confusion Matrix") 
-  plot_confusion_matrix(model, X_test, y_test)
+  cm = confusion_matrix(y_test, predictions, labels=model.classes_)
+  disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=clf.classes_)
+  disp.plot()
+  plt.show()
   st.pyplot()
 
 if st.checkbox("ROC Curve"):
   st.subheader("ROC Curve") 
-  plot_roc_curve(model, X_test, y_test)
+  RocCurveDisplay.from_estimator(model, X_test, y_test)
+  plt.show()
   st.pyplot()
