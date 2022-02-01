@@ -34,11 +34,6 @@ def clean_df(df):
   cols = list(df.columns)
   for col in cols:
     try:
-      df[col] = df[col].str.decode('utf-8')
-    except:
-      df[col] = pd.to_numeric(df[col])
-      pass
-    try:
       df = df.replace({col: {'YES': True, 'NO': False}})
     except:
       pass
